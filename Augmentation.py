@@ -21,30 +21,32 @@ This module is intentionally simple and deterministic (uses fixed params).
 Adjust parameters in the TRANSFORM_PARAMS dict below when needed.
 """
 
-from pathlib import Path
-from typing import Tuple
-import os
-from PIL import Image, ImageFilter
+import random
 import shutil
 import time
-import random
-import torchvision.transforms.functional as functional
+from pathlib import Path
+from typing import Tuple
+
 import torchvision.transforms as transforms
+import torchvision.transforms.functional as functional
+from PIL import Image, ImageFilter
 
 # Parameters for transforms (tweak as needed)
 TRANSFORM_PARAMS = {
     # These values are used as nominal ranges. Each transform will pick a
     # randomized value on each call derived from these settings.
-    "rotation_degrees": 30,            # max abs degrees for Rotation -> angle ~ U(-30,30)
-    "blur_radius": 2.0,                # max radius for Gaussian blur -> radius ~ U(0,2)
-    "contrast_factor": 1.5,            # nominal multiplier. Contrast ~ U(1/1.5,1.5)
-    "scale_factor": 1.2,               # nominal scale. Scale ~ U(1/1.2,1.2)
-    "illumination_factor": 1.2,        # nominal brightness multiplier -> U(1/1.2,1.2)
-    "projective_distortion_scale": 0.3,# max distortion for projective transform -> U(0,0.3)
+    "rotation_degrees": 30,  # max abs degrees for Rotation -> angle ~ U(-30,30)
+    "blur_radius": 2.0,  # max radius for Gaussian blur -> radius ~ U(0,2)
+    "contrast_factor": 1.5,  # nominal multiplier. Contrast ~ U(1/1.5,1.5)
+    "scale_factor": 1.2,  # nominal scale. Scale ~ U(1/1.2,1.2)
+    "illumination_factor": 1.2,  # nominal brightness multiplier -> U(1/1.2,1.2)
+    "projective_distortion_scale": 0.3,  # max distortion for projective transform -> U(0,0.3)
 }
 
 
-def _save_image(img: Image.Image, orig_path: Path, suffix: str, out_dir: Path = None) -> Path:
+def _save_image(
+    img: Image.Image, orig_path: Path, suffix: str, out_dir: Path = None
+) -> Path:
     """Save PIL image next to orig_path with suffix inserted before extension.
 
     Example: /path/photo.jpg with suffix 'Rotation' -> /path/photo_(Rotation).jpg
@@ -74,7 +76,11 @@ def _save_image(img: Image.Image, orig_path: Path, suffix: str, out_dir: Path = 
 
 def _list_images_in_dir(dir_path: Path):
     """Return list of jpg/jpeg image Paths in the given directory (non-recursive)."""
-    imgs = [p for p in dir_path.iterdir() if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg"}]
+    imgs = [
+        p
+        for p in dir_path.iterdir()
+        if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg"}
+    ]
     return imgs
 
 
@@ -84,7 +90,14 @@ def _create_augmented_from_image(src_path: Path, out_dir: Path = None) -> Path:
     Returns the saved Path object.
     """
     img = Image.open(src_path).convert("RGB")
-    transforms_choices = [_rotation_transform, _blur_transform, _contrast_transform, _scaling_transform, _illumination_transform, _projective_transform]
+    transforms_choices = [
+        _rotation_transform,
+        _blur_transform,
+        _contrast_transform,
+        _scaling_transform,
+        _illumination_transform,
+        _projective_transform,
+    ]
     # Choose exactly one transform at random
     fn = random.choice(transforms_choices)
     out_img = fn(img)
@@ -103,6 +116,7 @@ def process_root_folder(root: str, target_per_folder: int, logger=None):
         raise NotADirectoryError(f"Root path is not a directory: {root}")
     if logger is None:
         import logging
+
         logger = logging.getLogger(__name__)
     # Create an `augmented_directory` sibling and copy the source inside it
     parent = root_path.parent
@@ -126,7 +140,11 @@ def process_root_folder(root: str, target_per_folder: int, logger=None):
         count = len(imgs)
         logger.info("Folder %s: %d images found", child, count)
         if count >= target_per_folder:
-            logger.info("Folder %s already meets target (%d), skipping", child, target_per_folder)
+            logger.info(
+                "Folder %s already meets target (%d), skipping",
+                child,
+                target_per_folder,
+            )
             continue
         needed = target_per_folder - count
         logger.info("Folder %s needs %d more images, creating...", child, needed)
@@ -141,6 +159,7 @@ def process_root_folder(root: str, target_per_folder: int, logger=None):
 
     logger.info("Augmented dataset created at: %s", augmented_root)
     return augmented_child
+
 
 def _rotation_transform(img: Image.Image) -> Image.Image:
     """Rotate the image by TRANSFORM_PARAMS['rotation_degrees']."""
@@ -248,17 +267,43 @@ if __name__ == "__main__":
     import argparse
     import logging
 
-    parser = argparse.ArgumentParser(description="Apply torchvision augmentations to a JPG image or a root folder and save outputs.")
+    parser = argparse.ArgumentParser(
+        description="Apply torchvision augmentations to a JPG image or a root folder and save outputs."
+    )
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("-p", "--path", dest="path", help="Path to a JPG/JPEG image file (single-file mode)")
-    group.add_argument("-r", "--root", dest="root", help="Root folder containing subfolders to augment (batch mode)")
-    parser.add_argument("-n", "--num", dest="num", type=int, help="Target number of images per subfolder when using --root")
-    parser.add_argument("--seed", dest="seed", type=int, default=None, help="Optional random seed for reproducible augmentations")
+    group.add_argument(
+        "-p",
+        "--path",
+        dest="path",
+        help="Path to a JPG/JPEG image file (single-file mode)",
+    )
+    group.add_argument(
+        "-r",
+        "--root",
+        dest="root",
+        help="Root folder containing subfolders to augment (batch mode)",
+    )
+    parser.add_argument(
+        "-n",
+        "--num",
+        dest="num",
+        type=int,
+        help="Target number of images per subfolder when using --root",
+    )
+    parser.add_argument(
+        "--seed",
+        dest="seed",
+        type=int,
+        default=None,
+        help="Optional random seed for reproducible augmentations",
+    )
     args = parser.parse_args()
 
     # Simple console logger for the CLI entrypoint. Libraries shouldn't
     # configure root logging; we do it only when run as a script.
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s"
+    )
     logger = logging.getLogger(__name__)
 
     # Optionally seed randomness for reproducible runs

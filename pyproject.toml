@@ -1,6 +1,6 @@
 # pyproject.toml
 [tool.black]
-line-length = 79
+line-length = 88
 target-version = ['py310']
 skip-string-normalization = true
 

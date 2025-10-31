@@ -57,16 +57,16 @@ It has two behaviours:
 2- Fill out a root directory with new images until a max is reached at each folder.
 
 If we just want to create 6 new images with the available augmentations we run 
-```Augmentation.py --path path/to/file```
+```python Augmentation.py --path path/to/file```
 This will create 6 new images.
 
 If we want to fill out a folder with randomly selected augmentations we must run:
 
-```Augmentation.py --root root/folder --num number_of_images_to_reach```
+```python Augmentation.py --root root/folder --num number_of_images_to_reach```
 
 Example:
 
-```Augmentation.py --root Apple/ --num 3000```
+```python Augmentation.py --root Apple/ --num 3000```
 
 This will check the root folder Apple, will check each sub folder, like Apple_healty, and select random images and a random number of augmentations to fill out this folder images until it reaches 3000. 
 
